@@ -230,6 +230,30 @@ public abstract class ClassMap
 		}
 
 		AutoMapMembers(this, context, mapParents);
+
+		// Propagate type converter options from constructor parameter maps
+		// to their corresponding member maps. This ensures attributes like
+		// [Format] on constructor parameters are also applied during writing,
+		// which uses member maps rather than parameter maps.
+		foreach (var parameterMap in ParameterMaps)
+		{
+			var parameterOptions = parameterMap.Data.TypeConverterOptions;
+			if (parameterOptions.Formats == null)
+			{
+				continue;
+			}
+
+			var parameterName = parameterMap.Data.Parameter.Name;
+			var memberMap = MemberMaps.FirstOrDefault(m =>
+				m.Data.Member != null &&
+				string.Equals(m.Data.Member.Name, parameterName, StringComparison.OrdinalIgnoreCase));
+
+			if (memberMap != null && memberMap.Data.TypeConverterOptions.Formats == null)
+			{
+				memberMap.Data.TypeConverterOptions = TypeConverterOptions.Merge(
+					memberMap.Data.TypeConverterOptions, parameterOptions);
+			}
+		}
 	}
 
 	/// <summary>
