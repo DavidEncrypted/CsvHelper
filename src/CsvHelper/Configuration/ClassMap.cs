@@ -355,6 +355,16 @@ public abstract class ClassMap
 			members.AddRange(fields);
 		}
 
+		// Pre-compute constructor parameters so that IMemberMapper attributes placed on
+		// positional record parameters (or any constructor parameter) can be propagated
+		// to member maps and therefore honoured during writing.
+		ParameterInfo[]? constructorParameters = null;
+		if (context.Configuration.ShouldUseConstructorParameters(new ShouldUseConstructorParametersArgs(type)))
+		{
+			var ctorArgs = new GetConstructorArgs(map.ClassType);
+			constructorParameters = context.Configuration.GetConstructor(ctorArgs).GetParameters();
+		}
+
 		foreach (var member in members)
 		{
 			if (Attribute.IsDefined(member, typeof(IgnoreAttribute)))
@@ -433,6 +443,22 @@ public abstract class ClassMap
 				memberMap.Data.Index = map.GetMaxIndex() + 1;
 
 				ApplyAttributes(memberMap);
+
+				// Apply IMemberMapper attributes from a matching constructor parameter.
+				// This bridges the gap for positional records and other types where
+				// attributes are placed on constructor parameters rather than properties.
+				if (constructorParameters != null)
+				{
+					var matchingParam = constructorParameters
+						.FirstOrDefault(p => string.Equals(p.Name, member.Name, StringComparison.OrdinalIgnoreCase));
+					if (matchingParam != null)
+					{
+						foreach (var attr in matchingParam.GetCustomAttributes().OfType<IMemberMapper>())
+						{
+							attr.ApplyTo(memberMap);
+						}
+					}
+				}
 
 				map.MemberMaps.Add(memberMap);
 			}

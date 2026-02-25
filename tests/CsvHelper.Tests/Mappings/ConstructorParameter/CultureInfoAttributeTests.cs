@@ -67,7 +67,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 		}
 
 		[Fact]
-		public void WriteRecords_WithCultureInfoAttributes_DoesntUseParameterMaps()
+		public void WriteRecords_WithCultureInfoAttributeOnParameter_UsesCulture()
 		{
 			var records = new List<Foo>
 			{
@@ -81,7 +81,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 
 				var expected = new StringBuilder();
 				expected.Append("Id,Amount1,Amount2\r\n");
-				expected.Append("1,1.234,1.234\r\n");
+				expected.Append("1,\"1,234\",1.234\r\n");
 
 				Assert.Equal(expected.ToString(), writer.ToString());
 			}

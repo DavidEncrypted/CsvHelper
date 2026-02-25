@@ -75,7 +75,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 		}
 
 		[Fact]
-		public void WriteRecords_WithCultureInfoAttributes_DoesntUseParameterMaps()
+		public void WriteRecords_WithFormatAttributeOnParameter_UsesFormat()
 		{
 			var records = new List<Foo>
 			{
@@ -89,7 +89,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 
 				var expected = new StringBuilder();
 				expected.Append("Id,Date\r\n");
-				expected.Append($"1,{date.ToString(null, CultureInfo.InvariantCulture)}\r\n");
+				expected.Append($"1,{DATE}\r\n");
 
 				Assert.Equal(expected.ToString(), writer.ToString());
 			}
