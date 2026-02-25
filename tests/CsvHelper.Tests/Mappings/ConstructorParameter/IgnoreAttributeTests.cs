@@ -70,7 +70,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 		}
 
 		[Fact]
-		public void WriteRecords_WithIgnoreAttributes_DoesntUseParameterMaps()
+		public void WriteRecords_WithIgnoreAttributeOnParameter_IgnoresMember()
 		{
 			var records = new List<Foo>
 			{
@@ -83,8 +83,8 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 				csv.WriteRecords(records);
 
 				var expected = new StringBuilder();
-				expected.Append("Id,Name\r\n");
-				expected.Append("1,\r\n");
+				expected.Append("Id\r\n");
+				expected.Append("1\r\n");
 
 				Assert.Equal(expected.ToString(), writer.ToString());
 			}

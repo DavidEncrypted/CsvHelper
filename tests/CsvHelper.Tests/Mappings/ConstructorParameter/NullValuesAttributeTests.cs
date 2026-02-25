@@ -71,7 +71,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 		}
 
 		[Fact]
-		public void WriteRecords_WithBooleanFalseValuesAttribute_DoesntUseParameterMaps()
+		public void WriteRecords_WithNullValuesAttributeOnParameter_UsesNullValue()
 		{
 			var records = new List<Foo>
 			{
@@ -85,7 +85,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 
 				var expected = new StringBuilder();
 				expected.Append("Id,Name\r\n");
-				expected.Append("1,\r\n");
+				expected.Append("1,NULL\r\n");
 
 				Assert.Equal(expected.ToString(), writer.ToString());
 			}

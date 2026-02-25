@@ -73,7 +73,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 		}
 
 		[Fact]
-		public void WriteRecords_WithConstantAttributes_DoesntUseParameterMaps()
+		public void WriteRecords_WithConstantAttributeOnParameter_UsesConstant()
 		{
 			var records = new List<Foo>
 			{
@@ -87,7 +87,7 @@ namespace CsvHelper.Tests.Mappings.ConstructorParameter
 
 				var expected = new StringBuilder();
 				expected.Append("Id,Name\r\n");
-				expected.Append("1,\r\n");
+				expected.Append("1,Bar\r\n");
 
 				Assert.Equal(expected.ToString(), writer.ToString());
 			}

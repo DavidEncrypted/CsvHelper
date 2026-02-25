@@ -158,7 +158,7 @@ namespace CsvHelper.Tests.Mappings
 			{
 				csv.WriteRecords(records);
 
-				var expected = "Id,Name\r\n1,one\r\n";
+				var expected = "New Id,New Name\r\n1,one\r\n";
 				Assert.Equal(expected, writer.ToString());
 			}
 		}
@@ -177,7 +177,7 @@ namespace CsvHelper.Tests.Mappings
 				csv.Context.RegisterClassMap<FooParameterMap>();
 				csv.WriteRecords(records);
 
-				var expected = "Id,Name\r\n1,one\r\n";
+				var expected = "New Id,New Name\r\n1,one\r\n";
 				Assert.Equal(expected, writer.ToString());
 			}
 		}
