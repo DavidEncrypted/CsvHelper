@@ -23,7 +23,7 @@ public class TypeConverterAttribute : Attribute, IMemberMapper, IParameterMapper
 	/// when converting the member to and from a CSV field.
 	/// </summary>
 	/// <param name="typeConverterType">The type of the <see cref="ITypeConverter"/>.</param>
-	public TypeConverterAttribute(Type typeConverterType) : this(typeConverterType, new object[0]) { }
+	public TypeConverterAttribute(Type typeConverterType) : this(typeConverterType, Array.Empty<object>()) { }
 
 	/// <summary>
 	/// Specifies the <see cref="TypeConverter"/> to use
