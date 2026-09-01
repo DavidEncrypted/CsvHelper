@@ -1,0 +1,24 @@
+{
+	"$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-net/master/src/Stryker.Core/Stryker.Core/schemas/stryker-config.json",
+	"stryker-config": {
+		"project": "CsvHelper.csproj",
+		"test-projects": [ "tests/CsvHelper.Tests/CsvHelper.Tests.csproj" ],
+		"target-framework": "net9.0",
+		"configuration": "Release",
+		"mutate": [
+			"**/CsvParser.cs",
+			"**/CsvReader.cs",
+			"**/CsvWriter.cs",
+			"**/FieldCache.cs",
+			"**/ArrayHelper.cs"
+		],
+		"mutation-level": "Standard",
+		"reporters": [ "progress", "html", "json" ],
+		"thresholds": {
+			"high": 80,
+			"low": 65,
+			"break": 60
+		},
+		"concurrency": 10
+	}
+}
