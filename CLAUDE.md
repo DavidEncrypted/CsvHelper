@@ -1,0 +1,1 @@
+`CultureInfoAttributeTests.CsvConfiguration_FromType_InvalidAttribute_ThrowsCultureNotFoundException` fails on Linux because ICU accepts `new CultureInfo("invalid")` instead of throwing like Windows NLS — expected, not a real bug.
