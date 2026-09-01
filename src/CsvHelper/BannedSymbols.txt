@@ -1,0 +1,22 @@
+# Symbols banned in the hot path (CsvParser, FieldCache, ArrayHelper).
+#
+# Severity is set per path in .editorconfig: RS0030 is `none` for the library at
+# large and `error` for the files above, because LINQ and friends are legitimate
+# in cold setup, mapping and validation code.
+#
+# Format: <DocumentationCommentId>;<message>
+# Rationale for every entry: .claude/skills/hot-path-constraints/SKILL.md
+#
+# If a cold region of a hot-path file genuinely needs one of these (an exception
+# message, Dispose, one-time delimiter detection), suppress it at the line with a
+# reason -- the pragma documents that the line is not per-row:
+#   #pragma warning disable RS0030 // cold: exception path
+
+T:System.Linq.Enumerable;Allocates an enumerator, and usually a closure, per call. Hot path - see hot-path-constraints, "No LINQ, no regex, no string.Split, no Activator in the parse loop".
+T:System.Text.RegularExpressions.Regex;Allocates, and is far slower than the char state machine. See hot-path-constraints, "ReadLine must stay resumable".
+M:System.String.Substring(System.Int32);Allocates a string. Pass (buffer, start, length) and trim with ref start/length instead - see hot-path-constraints, "Fields are offsets, not strings".
+M:System.String.Substring(System.Int32,System.Int32);Allocates a string. Pass (buffer, start, length) and trim with ref start/length instead - see hot-path-constraints, "Fields are offsets, not strings".
+M:System.String.Join``1(System.String,System.Collections.Generic.IEnumerable{``0});Allocates a string per call. See hot-path-constraints, "Strings are materialized lazily, once per row".
+M:System.String.Join(System.String,System.String[]);Allocates a string per call. See hot-path-constraints, "Strings are materialized lazily, once per row".
+M:System.Activator.CreateInstance(System.Type);Use ObjectCreator, which caches compiled constructor expressions - see hot-path-constraints, "Reflection is paid exactly once".
+M:System.Activator.CreateInstance(System.Type,System.Object[]);Use ObjectCreator, which caches compiled constructor expressions - see hot-path-constraints, "Reflection is paid exactly once".
