@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -302,6 +303,54 @@ namespace CsvHelper.Tests.Parsing
 			};
 			var delimeter = ConfigurationFunctions.GetDelimiter(new Delegates.GetDelimiterArgs(s.ToString(), config));
 			Assert.Equal(";", delimeter);
+		}
+
+		[Fact]
+		public void GetDelimiter_KnownLineEndings_AreHoistedToStaticReadonlyField()
+		{
+			// Issue #7 (CA1861). The known line endings must live in a shared
+			// static readonly field instead of being allocated as a new string[]
+			// on every GetDelimiter call.
+			var field = typeof(ConfigurationFunctions)
+				.GetFields(BindingFlags.NonPublic | BindingFlags.Static)
+				.Where(f => f.FieldType == typeof(string[]))
+				.SingleOrDefault(f => new[] { "\r\n", "\r", "\n" }.SequenceEqual((string[])f.GetValue(null)!));
+
+			Assert.NotNull(field);
+			Assert.True(field!.IsInitOnly);
+		}
+
+		[Theory]
+		[InlineData("\r\n")]
+		[InlineData("\r")]
+		[InlineData("\n")]
+		public void GetDelimiter_KnownLineEnding_DetectsDelimiterOnAllLineEndings(string newLine)
+		{
+			var s = new StringBuilder();
+			s.Append($"Id;Name{newLine}");
+			s.Append($"1;one{newLine}");
+			var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+			{
+				NewLine = newLine,
+				DetectDelimiter = true,
+			};
+
+			Assert.Equal(";", ConfigurationFunctions.GetDelimiter(new Delegates.GetDelimiterArgs(s.ToString(), config)));
+		}
+
+		[Fact]
+		public void GetDelimiter_CustomLineEnding_DetectsDelimiter()
+		{
+			var s = new StringBuilder();
+			s.Append("Id;Name#");
+			s.Append("1;one#");
+			var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+			{
+				NewLine = "#",
+				DetectDelimiter = true,
+			};
+
+			Assert.Equal(";", ConfigurationFunctions.GetDelimiter(new Delegates.GetDelimiterArgs(s.ToString(), config)));
 		}
 	}
 }

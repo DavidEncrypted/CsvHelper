@@ -13,6 +13,7 @@ namespace CsvHelper.Configuration;
 public static class ConfigurationFunctions
 {
 	private static readonly char[] lineEndingChars = new char[] { '\r', '\n' };
+	private static readonly string[] lineEndings = new string[] { "\r\n", "\r", "\n" };
 
 	/// <summary>
 	/// Throws a <see cref="ValidationException"/> if <see name="HeaderValidatedArgs.InvalidHeaders"/> is not empty.
@@ -197,7 +198,7 @@ public static class ConfigurationFunctions
 		}
 
 		var newLine = config.NewLine;
-		if ((new[] { "\r\n", "\r", "\n" }).Contains(newLine))
+		if (lineEndings.Contains(newLine))
 		{
 			newLine = "\r\n|\r|\n";
 		}
