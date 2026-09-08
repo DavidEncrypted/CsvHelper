@@ -11,9 +11,9 @@ namespace CsvHelper.TypeConversion;
 /// </summary>
 public class TypeConverterOptions
 {
-	private static readonly string[] defaultBooleanTrueValues = { };
-	private static readonly string[] defaultBooleanFalseValues = { };
-	private static readonly string[] defaultNullValues = { };
+	private static readonly string[] defaultBooleanTrueValues = Array.Empty<string>();
+	private static readonly string[] defaultBooleanFalseValues = Array.Empty<string>();
+	private static readonly string[] defaultNullValues = Array.Empty<string>();
 
 	/// <summary>
 	/// Gets or sets the culture info.

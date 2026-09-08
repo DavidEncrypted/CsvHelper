@@ -123,3 +123,39 @@ dotnet_style_predefined_type_for_member_access = true:silent
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent
 dotnet_style_allow_multiple_blank_lines_experimental = true:suggestion
 dotnet_style_allow_statement_immediately_after_block_experimental = true:suggestion
+
+# ---------------------------------------------------------------------------
+# CsvHelper library: opt-in analyzer rules.
+#
+# The library project sets AnalysisMode=None, so no rule is on by default and
+# the baseline stays at zero warnings. Rules are turned on here, scoped by path
+# so the test and benchmark projects are unaffected.
+#
+# The invariants these protect are documented in
+# .claude/skills/hot-path-constraints/SKILL.md
+# ---------------------------------------------------------------------------
+[src/CsvHelper/**.cs]
+
+# Mechanical, no judgement involved -> error.
+dotnet_diagnostic.CA2007.severity = error   # await needs ConfigureAwait(false) in a library
+dotnet_diagnostic.CA1825.severity = error   # Array.Empty<T>() over new T[0]
+dotnet_diagnostic.CA1834.severity = error   # StringBuilder.Append(char) over Append(string)
+dotnet_diagnostic.CA1845.severity = error   # span-based string concat
+dotnet_diagnostic.CA1846.severity = error   # AsSpan over Substring
+dotnet_diagnostic.CA1860.severity = error   # Length/Count over Any()
+
+# Heuristic and known to false-positive -> warning, so they inform without
+# blocking a change that is actually correct.
+dotnet_diagnostic.CA1851.severity = warning # possible multiple enumeration
+dotnet_diagnostic.CA1861.severity = warning # constant array passed as argument
+
+# Banned symbols (BannedSymbols.txt) are off outside the hot path, where LINQ
+# and friends are legitimate in cold setup/validation code.
+dotnet_diagnostic.RS0030.severity = none
+
+# ---------------------------------------------------------------------------
+# Hot path: the allocation-free files. Nothing here may allocate per row.
+# The glob is a prefix match, so a future CsvParser.Fields.cs split stays covered.
+# ---------------------------------------------------------------------------
+[src/CsvHelper/{CsvParser,FieldCache,ArrayHelper}*.cs]
+dotnet_diagnostic.RS0030.severity = error

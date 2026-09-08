@@ -91,7 +91,7 @@ public static class ReflectionExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool HasParameterlessConstructor(this Type type)
 	{
-		return type.GetConstructor(new Type[0]) != null;
+		return type.GetConstructor(Array.Empty<Type>()) != null;
 	}
 
 	/// <summary>

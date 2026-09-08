@@ -10,3 +10,4 @@ cache/
 *.user
 *.psess
 *.log
+StrykerOutput/

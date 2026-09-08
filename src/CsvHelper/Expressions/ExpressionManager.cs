@@ -359,7 +359,7 @@ public class ExpressionManager
 	{
 		var expressions = new List<Expression>();
 		var createInstanceMethod = typeof(IObjectResolver).GetMethod(nameof(IObjectResolver.Resolve), new Type[] { typeof(Type), typeof(object[]) })!;
-		var instanceExpression = Expression.Convert(Expression.Call(Expression.Constant(ObjectResolver.Current), createInstanceMethod, Expression.Constant(recordType), Expression.Constant(new object[0])), recordType);
+		var instanceExpression = Expression.Convert(Expression.Call(Expression.Constant(ObjectResolver.Current), createInstanceMethod, Expression.Constant(recordType), Expression.Constant(Array.Empty<object>())), recordType);
 		var variableExpression = Expression.Variable(instanceExpression.Type, "instance");
 		expressions.Add(Expression.Assign(variableExpression, instanceExpression));
 		expressions.AddRange(assignments.Select(b => Expression.Assign(Expression.MakeMemberAccess(variableExpression, b.Member), b.Expression)));

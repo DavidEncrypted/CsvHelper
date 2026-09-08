@@ -590,7 +590,7 @@ public class CsvWriter : IWriter
 				await NextRecordAsync().ConfigureAwait(false);
 			}
 
-			if (!await enumerator.MoveNextAsync())
+			if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
 			{
 				return;
 			}

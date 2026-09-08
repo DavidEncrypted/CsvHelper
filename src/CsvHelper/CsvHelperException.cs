@@ -125,14 +125,14 @@ public class CsvHelperException : Exception
 			var record = new StringBuilder();
 			if (context.Writer.HeaderRecord != null)
 			{
-				record.Append("[");
+				record.Append('[');
 				if (context.Writer.HeaderRecord.Length > 0)
 				{
-					record.Append("\"");
+					record.Append('"');
 					record.Append(string.Join("\",\"", context.Writer.HeaderRecord));
-					record.Append("\"");
+					record.Append('"');
 				}
-				record.Append("]");
+				record.Append(']');
 			}
 			details.AppendLine($"{indent}{nameof(IWriter.HeaderRecord)}:{Environment.NewLine}{context.Writer.Row}");
 		}

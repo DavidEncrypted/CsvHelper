@@ -19,6 +19,12 @@
 		<Nullable>enable</Nullable>
         <WarningsAsErrors>nullable</WarningsAsErrors>
 
+		<!-- Analyzers. AnalysisMode=None means no rule is on by default; rules are
+		     opted into per path in .editorconfig. AnalysisLevel is pinned rather than
+		     'latest' so a newer SDK on a build machine can't change the rule set. -->
+		<AnalysisLevel>9.0</AnalysisLevel>
+		<AnalysisMode>None</AnalysisMode>
+
 		<!-- Sign -->
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>CsvHelper.snk</AssemblyOriginatorKeyFile>
@@ -84,6 +90,14 @@
 	<!-- .NET Standard 2.1 -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
 		<PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<AdditionalFiles Include="BannedSymbols.txt" />
 	</ItemGroup>
 
 	<ItemGroup>

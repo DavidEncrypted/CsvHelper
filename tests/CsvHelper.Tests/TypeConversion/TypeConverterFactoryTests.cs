@@ -34,11 +34,7 @@ namespace CsvHelper.Tests.TypeConversion
 		[Fact]
 		public void WriteTypeConverterGenericInt()
 		{
-			var expected = """
-			               MaybeNumber
-			               42
-
-			               """;
+			var expected = "MaybeNumber\r\n42\r\n";
 
 			var stringWriter = new StringWriter();
 			using var cw = new CsvWriter(stringWriter, CultureInfo.InvariantCulture);
@@ -68,11 +64,7 @@ namespace CsvHelper.Tests.TypeConversion
 		[Fact]
 		public void WriteTypeConverterFactory()
 		{
-			var expected = """
-			               MaybeNumber
-			               42
-
-			               """;
+			var expected = "MaybeNumber\r\n42\r\n";
 
 			var stringWriter = new StringWriter();
 			using var cw = new CsvWriter(stringWriter, CultureInfo.InvariantCulture);
