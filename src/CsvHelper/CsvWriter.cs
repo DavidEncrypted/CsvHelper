@@ -739,6 +739,15 @@ public class CsvWriter : IWriter
 			return field;
 		}
 
+		// Numeric values such as "-5" or "+1.5" are not formula injection and should
+		// pass through untouched. Sanitizing them corrupts legitimate numeric data and
+		// is the most common source of false-positive reports. A leading sign followed
+		// by a digit is a number, not a formula, so skip the injection check for it.
+		if ((field[0] == '-' || field[0] == '+') && field.Length > 1 && char.IsDigit(field[1]))
+		{
+			return field;
+		}
+
 		int injectionCharIndex;
 		if (ArrayHelper.Contains(injectionCharacters, field[0]))
 		{
