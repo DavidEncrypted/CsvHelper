@@ -235,7 +235,24 @@ jobs:
             1. Create a branch: git checkout -b claude/issue-${{ env.ISSUE_NUMBER }}
             2. Make the smallest correct change that fixes the issue.
             3. Add or extend an xunit test in tests/CsvHelper.Tests that FAILS without
-               your fix and passes with it. A fix with no test does not count as done.
+               your fix and passes with it.
+
+               EXCEPTION — some fixes are not behaviourally testable: analyzer
+               warnings, pure refactors, and performance changes are all
+               behaviour-preserving by construction. In that case do NOT invent a
+               structural test that reflects over private fields or otherwise asserts
+               on the shape of the implementation. Such a test pins one particular
+               fix technique, breaks when someone refactors correctly, and provides
+               no real signal. Instead: say plainly in your summary that the change
+               is behaviour-preserving, name the signal that DOES cover it (the
+               analyzer, the build, the existing suite), and consider whether that
+               signal should be strengthened — e.g. promoting the rule from warning
+               to error in .editorconfig, which turns the build itself into the
+               regression guard.
+
+               Adding behaviour tests that pin the surrounding logic is still
+               welcome. A missing test is better than a test that asserts
+               implementation shape.
             4. Verify — both commands must pass:
                  dotnet build src/CsvHelper/CsvHelper.csproj -c Release
                  dotnet test tests/CsvHelper.Tests/CsvHelper.Tests.csproj -c Release -f net9.0
@@ -317,6 +334,10 @@ jobs:
             --title "$TITLE" \
             --body-file "${{ runner.temp }}/pr-body.md"
         env:
-          # Prefer the Claude GitHub App token: a PR opened with it DOES trigger
-          # ci.yaml, where GITHUB_TOKEN would not.
-          GH_TOKEN: ${{ steps.claude.outputs.github_token || github.token }}
+          # Must be GITHUB_TOKEN. The action's `github_token` output is revoked once
+          # its own step finishes, so using it here fails with `HTTP 401: Bad
+          # credentials` — and `A || B` only falls back when A is empty, not invalid.
+          # Losing the app identity costs nothing here: ci.yaml triggers `on: push`,
+          # so Claude's branch is already built and tested on windows-latest across
+          # all 7 frameworks before the PR is even opened.
+          GH_TOKEN: ${{ github.token }}
