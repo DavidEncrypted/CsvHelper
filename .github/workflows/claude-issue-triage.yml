@@ -1,10 +1,14 @@
 # Triage new issues with Claude, and auto-fix the easy ones.
 #
 #   Job 1 (triage) runs on every newly opened issue. Read-only against the code:
-#   it labels, comments, and decides whether the issue is an easy fix.
-#   Job 2 (fix) runs when triage said yes, or when a human adds `claude-fix`.
-#   It branches, edits, builds all 7 target frameworks, runs the tests, and
-#   only opens a PR if that all passed.
+#   it labels, comments, and routes to one of `agent`, `reply` or `human`.
+#   Job 2 (fix) runs when triage routed to `agent`, or when a human adds the
+#   `claude-fix` label. It branches, edits, builds all 7 target frameworks, runs
+#   the tests, and only opens a PR if that all passed.
+#
+#   The routing gate is about DECIDABILITY, not difficulty: an agent can diagnose,
+#   implement, test and verify, but it cannot decide what the behaviour ought to
+#   be. Only that second kind of question goes to a human.
 #
 # Both jobs live in one file on purpose: a label applied by job 1 using
 # GITHUB_TOKEN would NOT start a separate workflow (GitHub blocks that to
@@ -49,7 +53,8 @@ jobs:
       issues: write
       id-token: write
     outputs:
-      easy_fix: ${{ steps.decision.outputs.easy_fix }}
+      route: ${{ steps.decision.outputs.route }}
+      blocker: ${{ steps.decision.outputs.blocker }}
       reason: ${{ steps.decision.outputs.reason }}
     env:
       GH_TOKEN: ${{ github.token }}
@@ -81,25 +86,61 @@ jobs:
             5. Apply labels with:
                  gh issue edit ${{ env.ISSUE_NUMBER }} --add-label "<label>"
                ONLY use labels that already exist — check with `gh label list` first.
-            6. Post a short triage comment (gh issue comment) with: classification,
-               the files you think are involved, and any duplicate you found.
+            6. Post a triage comment (gh issue comment) with: classification, the
+               files you think are involved, and any duplicate you found. If you are
+               going to route this as "reply" below, that comment IS the answer to
+               the reporter — make it complete and useful on its own: explain the
+               behaviour, cite the code or the docs, or link the duplicate. Do not
+               close the issue; leave that to a maintainer.
 
-            Finally, decide whether this is an EASY FIX and write your verdict to
+            Finally, route the issue. Write your verdict to
             ${{ runner.temp }}/triage-result.json — exactly this shape:
 
-              {"easy_fix": true, "reason": "one sentence", "files": ["src/..."]}
+              {"route": "agent", "blocker": null, "reason": "one sentence",
+               "files": ["src/..."]}
 
-            Judge "easy_fix": true ONLY when ALL of these hold:
-              - The problem is clearly and unambiguously specified.
-              - The fix is a contained change to a small number of files.
-              - It is testable with the existing xunit suite.
-              - It does NOT change public API surface or serialization behaviour.
-              - It does NOT touch the hot path (CsvParser, CsvReader, CsvWriter,
-                FieldCache, ArrayHelper) in a way that could allocate per row.
+            Pick exactly one route:
 
-            Anything vague, architectural, performance-sensitive, or that needs a
-            design decision is easy_fix: false. When in doubt, say false — a human
-            picking it up is much cheaper than a wrong PR.
+              "agent"  An agent should fix this now. THIS IS THE DEFAULT.
+              "reply"  No code change is needed — the comment you just posted is the
+                       answer (a question, a duplicate, or working as intended).
+              "human"  A maintainer has to decide something before any fix makes sense.
+
+            Route to "human" ONLY when one of these blockers genuinely applies, and
+            name it in the "blocker" field:
+
+              "spec-unclear"     Correct behaviour is not determined by the issue plus
+                                 the codebase — a vague report, or a case where two
+                                 behaviours are both defensible (RFC 4180 says one
+                                 thing, Excel does another). Which one wins is a
+                                 choice, not a deduction.
+              "api-design"       The fix needs new or changed PUBLIC API surface.
+                                 CsvHelper has tens of millions of downloads; public
+                                 surface is a permanent commitment.
+              "breaking-change"  The fix would change existing parse or write behaviour
+                                 that people depend on, even if today's behaviour is
+                                 arguably wrong. Someone has to accept the break and
+                                 decide how to version it.
+              "perf-claim"       The issue is about throughput or allocations. CI
+                                 runners are too noisy for BenchmarkDotNet to be a
+                                 trustworthy signal, so this has to be verified
+                                 locally by a human.
+              "no-repro"         You TRIED to construct a failing test case and could
+                                 not, and the report does not supply one. Attempt the
+                                 repro before reaching for this — building it is
+                                 useful work even when you then hand off.
+
+            Set "blocker" to null for the "agent" and "reply" routes.
+
+            Do NOT route to "human" because a change is large, spans many files, or
+            looks difficult. Size and difficulty are not blockers. A correctness fix
+            in the hot path (CsvParser, CsvReader, CsvWriter, FieldCache, ArrayHelper)
+            is an "agent" fix — the hot-path-constraints skill, the banned-symbol
+            analyzers and the allocation tests exist precisely so that is safe.
+
+            When genuinely torn between "agent" and "human", choose "agent". A wrong
+            PR costs one review and can be closed; over-escalating means this
+            workflow does nothing at all.
           claude_args: |
             --model claude-sonnet-5
             --max-turns 30
@@ -110,22 +151,33 @@ jobs:
         run: |
           RESULT="${{ runner.temp }}/triage-result.json"
           if [ ! -f "$RESULT" ]; then
-            echo "No triage-result.json produced — defaulting to no auto-fix."
-            echo "easy_fix=false" >> "$GITHUB_OUTPUT"
+            echo "No triage-result.json produced — routing to a human."
+            echo "route=human" >> "$GITHUB_OUTPUT"
+            echo "blocker=none" >> "$GITHUB_OUTPUT"
             echo "reason=triage produced no verdict file" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           cat "$RESULT"
-          EASY=$(jq -r 'if .easy_fix == true then "true" else "false" end' "$RESULT")
+          ROUTE=$(jq -r '.route // "human"' "$RESULT")
+          case "$ROUTE" in
+            agent|reply|human) ;;
+            *) echo "Unrecognised route '$ROUTE' — routing to a human."; ROUTE=human ;;
+          esac
+          BLOCKER=$(jq -r '.blocker // "none"' "$RESULT")
           REASON=$(jq -r '.reason // "no reason given"' "$RESULT" | tr '\n' ' ' | cut -c1-300)
-          echo "easy_fix=$EASY" >> "$GITHUB_OUTPUT"
+          echo "route=$ROUTE" >> "$GITHUB_OUTPUT"
+          echo "blocker=$BLOCKER" >> "$GITHUB_OUTPUT"
           echo "reason=$REASON" >> "$GITHUB_OUTPUT"
-          echo "### Triage verdict" >> "$GITHUB_STEP_SUMMARY"
-          echo "easy_fix: \`$EASY\` — $REASON" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### Triage verdict"
+            echo "- route: \`$ROUTE\`"
+            echo "- blocker: \`$BLOCKER\`"
+            echo "- reason: $REASON"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ---------------------------------------------------------------------------
-  # Job 2 — fix. Runs when triage said "easy", or when someone adds `claude-fix`
-  # to an existing issue by hand.
+  # Job 2 — fix. Runs when triage routed the issue to `agent`, or when someone
+  # adds `claude-fix` to an existing issue by hand.
   # ---------------------------------------------------------------------------
   fix:
     needs: triage
@@ -133,7 +185,7 @@ jobs:
       !cancelled()
       && github.event.issue.user.type != 'Bot'
       && (
-        needs.triage.outputs.easy_fix == 'true'
+        needs.triage.outputs.route == 'agent'
         || (github.event.action == 'labeled' && github.event.label.name == 'claude-fix')
       )
     runs-on: ubuntu-latest
